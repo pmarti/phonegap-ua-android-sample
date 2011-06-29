@@ -99,7 +99,7 @@ PhoneGap.Channel.prototype.subscribe = function(f, c, g) {
     if (f === null) { return; }
 
     var func = f;
-    if (typeof c === "object" && f instanceof Function) { func = PhoneGap.close(c, f); }
+    if (typeof c === "object" && typeof f === "function") { func = PhoneGap.close(c, f); }
 
     g = g || func.observer_guid || f.observer_guid || this.guid++;
     func.observer_guid = g;
@@ -120,7 +120,7 @@ PhoneGap.Channel.prototype.subscribeOnce = function(f, c) {
         _this.unsubscribe(g);
     };
     if (this.fired) {
-        if (typeof c === "object" && f instanceof Function) { f = PhoneGap.close(c, f); }
+        if (typeof c === "object" && typeof f === "function") { f = PhoneGap.close(c, f); }
         f.apply(this, this.fireArgs);
     } else {
         g = this.subscribe(m);
@@ -132,7 +132,7 @@ PhoneGap.Channel.prototype.subscribeOnce = function(f, c) {
  * Unsubscribes the function with the given guid from the channel.
  */
 PhoneGap.Channel.prototype.unsubscribe = function(g) {
-    if (g instanceof Function) { g = g.observer_guid; }
+    if (typeof g === "function") { g = g.observer_guid; }
     this.handlers[g] = null;
     delete this.handlers[g];
 };
@@ -147,7 +147,7 @@ PhoneGap.Channel.prototype.fire = function(e) {
         for (item in this.handlers) {
             if (this.handlers.hasOwnProperty(item)) {
                 handler = this.handlers[item];
-                if (handler instanceof Function) {
+                if (typeof handler === "function") {
                     rv = (handler.apply(this, arguments) === false);
                     fail = fail || rv;
                 }
@@ -344,10 +344,13 @@ PhoneGap.Channel.join(function() {
             }
             else {
                 var polling = prompt("usePolling", "gap_callbackServer:");
+                PhoneGap.UsePolling = polling;
                 if (polling == "true") {
+                    PhoneGap.UsePolling = true;
                     PhoneGap.JSCallbackPolling();
                 }
                 else {
+                    PhoneGap.UsePolling = false;
                     PhoneGap.JSCallback();
                 }
             }
@@ -507,7 +510,7 @@ PhoneGap.clone = function(obj) {
         return retVal;
     }
     
-    if (obj instanceof Function) {
+    if (typeof obj === "function") {
         return obj;
     }
     
@@ -767,8 +770,8 @@ PhoneGap.JSCallback = function() {
             // If callback has JavaScript statement to execute
             if (xmlhttp.status === 200) {
 
-                // Need to url decode the response and replace %20 with a space
-                var msg = decodeURIComponent(xmlhttp.responseText.replace(/\+/g, '%20'));
+                // Need to url decode the response
+                var msg = decodeURIComponent(xmlhttp.responseText);
                 setTimeout(function() {
                     try {
                         var t = eval(msg);
@@ -802,13 +805,11 @@ PhoneGap.JSCallback = function() {
                 console.log("JSCallback Error: Bad request.  Stopping callbacks.");
             }
 
-            // If error, restart callback server
+            // If error, revert to polling
             else {
                 console.log("JSCallback Error: Request failed.");
-                prompt("restartServer", "gap_callbackServer:");
-                PhoneGap.JSCallbackPort = null;
-                PhoneGap.JSCallbackToken = null;
-                setTimeout(PhoneGap.JSCallback, 100);
+                PhoneGap.UsePolling = true;
+                PhoneGap.JSCallbackPolling();
             }
         }
     };
@@ -935,7 +936,11 @@ PhoneGap.includeJavascript = function(jsfile, successCallback) {
  */
 var PluginManager = {
     addService: function(serviceType, className) {
-        navigator.app.addService(serviceType, className);   
+        try {
+            navigator.app.addService(serviceType, className);
+        } catch (e) {
+            console.log("Error adding service "+serviceType+": "+e);
+        }
     }
 };
 
@@ -1066,8 +1071,6 @@ PhoneGap.addConstructor(function() {
     }
 });
 }
-
-
 /*
  * PhoneGap is available under *either* the terms of the modified BSD license *or* the
  * MIT License (2008). See http://opensource.org/licenses/alphabetical for full text.
@@ -1162,8 +1165,6 @@ PhoneGap.addConstructor(function() {
     navigator.app = window.app = new App();
 });
 }
-
-
 /*
  * PhoneGap is available under *either* the terms of the modified BSD license *or* the
  * MIT License (2008). See http://opensource.org/licenses/alphabetical for full text.
@@ -1261,8 +1262,6 @@ PhoneGap.addConstructor(function() {
     }
 });
 }
-
-
 /*
  * PhoneGap is available under *either* the terms of the modified BSD license *or* the
  * MIT License (2008). See http://opensource.org/licenses/alphabetical for full text.
@@ -1453,9 +1452,7 @@ PhoneGap.addConstructor(function(){
 		navigator.device.capture = window.device.capture = new Capture();
 	}
 });
-}
-
-/*
+}/*
  * PhoneGap is available under *either* the terms of the modified BSD license *or* the
  * MIT License (2008). See http://opensource.org/licenses/alphabetical for full text.
  *
@@ -1574,8 +1571,6 @@ PhoneGap.addConstructor(function() {
     }
 });
 }
-
-
 /*
  * PhoneGap is available under *either* the terms of the modified BSD license *or* the
  * MIT License (2008). See http://opensource.org/licenses/alphabetical for full text.
@@ -1885,8 +1880,6 @@ PhoneGap.addConstructor(function() {
     }
 });
 }
-
-
 /*
  * PhoneGap is available under *either* the terms of the modified BSD license *or* the
  * MIT License (2008). See http://opensource.org/licenses/alphabetical for full text.
@@ -1930,8 +1923,6 @@ PhoneGap.addConstructor(function() {
     }
 });
 }
-
-
 /*
  * PhoneGap is available under *either* the terms of the modified BSD license *or* the
  * MIT License (2008). See http://opensource.org/licenses/alphabetical for full text.
@@ -2037,8 +2028,6 @@ PhoneGap.addConstructor(function() {
     }
 });
 }
-
-
 /*
  * PhoneGap is available under *either* the terms of the modified BSD license *or* the
  * MIT License (2008). See http://opensource.org/licenses/alphabetical for full text.
@@ -3085,7 +3074,7 @@ LocalFileSystem.prototype._castDate = function(pluginResult) {
         file.type = pluginResult.message.type;
         file.name = pluginResult.message.name;
         file.fullPath = pluginResult.message.fullPath;
-        file.lastModifedDate = new Date(pluginResult.message.lastModifiedDate);
+        file.lastModifiedDate = new Date(pluginResult.message.lastModifiedDate);
         pluginResult.message = file;
     }
     return pluginResult;
@@ -3102,8 +3091,6 @@ PhoneGap.addConstructor(function() {
     if(typeof window.resolveLocalFileSystemURI == "undefined") window.resolveLocalFileSystemURI = pgLocalFileSystem.resolveLocalFileSystemURI;
 });
 }
-
-
 /*
  * PhoneGap is available under *either* the terms of the modified BSD license *or* the
  * MIT License (2008). See http://opensource.org/licenses/alphabetical for full text.
@@ -3189,8 +3176,6 @@ var FileUploadOptions = function(fileKey, fileName, mimeType, params) {
     this.params = params || null;
 };
 }
-
-
 /*
  * PhoneGap is available under *either* the terms of the modified BSD license *or* the
  * MIT License (2008). See http://opensource.org/licenses/alphabetical for full text.
@@ -3389,17 +3374,6 @@ PhoneGap.addConstructor(function() {
     }
 });
 }
-
-
-/*
- * PhoneGap is available under *either* the terms of the modified BSD license *or* the
- * MIT License (2008). See http://opensource.org/licenses/alphabetical for full text.
- *
- * Copyright (c) 2005-2010, Nitobi Software Inc.
- * Copyright (c) 2010, IBM Corporation
- */
-
-
 /*
  * PhoneGap is available under *either* the terms of the modified BSD license *or* the
  * MIT License (2008). See http://opensource.org/licenses/alphabetical for full text.
@@ -3611,8 +3585,6 @@ PhoneGap.Media.onStatus = function(id, msg, value) {
     }
 };
 }
-
-
 /*
  * PhoneGap is available under *either* the terms of the modified BSD license *or* the
  * MIT License (2008). See http://opensource.org/licenses/alphabetical for full text.
@@ -3680,29 +3652,49 @@ Network.prototype.isReachable = function(uri, callback, options) {
  */
 var Connection = function() {
     this.type = null;
-    this.homeNW = null;
-    this.currentNW = null;
+    this._firstRun = true;
+    this._timer = null;
+    this.timeout = 500;
 
     var me = this;
     this.getInfo(
-        function(info) {
-            me.type = info.type;
-            me.homeNW = info.homeNW;
-            me.currentNW = info.currentNW;
-            PhoneGap.onPhoneGapConnectionReady.fire();
+        function(type) {
+            // Need to send events if we are on or offline
+            if (type == "none") {
+                // set a timer if still offline at the end of timer send the offline event
+                me._timer = setTimeout(function(){
+                    me.type = type;
+                    PhoneGap.fireEvent('offline');
+                    me._timer = null;
+                    }, me.timeout);
+            } else {
+                // If there is a current offline event pending clear it
+                if (me._timer != null) {
+                    clearTimeout(me._timer);
+                    me._timer = null;
+                }
+                me.type = type;
+                PhoneGap.fireEvent('online');
+            }
+            
+            // should only fire this once
+            if (me._firstRun) {
+                me._firstRun = false;
+                PhoneGap.onPhoneGapConnectionReady.fire();
+            }            
         },
         function(e) {
             console.log("Error initializing Network Connection: " + e);
         });
 };
 
-Connection.UNKNOWN = 0;
-Connection.ETHERNET = 1;
-Connection.WIFI = 2;
-Connection.CELL_2G = 3;
-Connection.CELL_3G = 4;
-Connection.CELL_4G = 5;
-Connection.NONE = 20;
+Connection.UNKNOWN = "unknown";
+Connection.ETHERNET = "ethernet";
+Connection.WIFI = "wifi";
+Connection.CELL_2G = "2g";
+Connection.CELL_3G = "3g";
+Connection.CELL_4G = "4g";
+Connection.NONE = "none";
 
 /**
  * Get connection info
@@ -3725,8 +3717,6 @@ PhoneGap.addConstructor(function() {
     }
 });
 }
-
-
 /*
  * PhoneGap is available under *either* the terms of the modified BSD license *or* the
  * MIT License (2008). See http://opensource.org/licenses/alphabetical for full text.
@@ -3849,8 +3839,6 @@ PhoneGap.addConstructor(function() {
     }
 });
 }
-
-
 /*
  * PhoneGap is available under *either* the terms of the modified BSD license *or* the
  * MIT License (2008). See http://opensource.org/licenses/alphabetical for full text.
@@ -3940,8 +3928,6 @@ PositionError.PERMISSION_DENIED = 1;
 PositionError.POSITION_UNAVAILABLE = 2;
 PositionError.TIMEOUT = 3;
 }
-
-
 /*
  * PhoneGap is available under *either* the terms of the modified BSD license *or* the
  * MIT License (2008). See http://opensource.org/licenses/alphabetical for full text.
@@ -4370,5 +4356,3 @@ PhoneGap.addConstructor(function() {
     }
 });
 }
-
-
