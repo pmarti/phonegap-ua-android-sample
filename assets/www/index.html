@@ -4,7 +4,7 @@
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
         <title>Sample Phonegap-UA-Android</title>
 
-        <script type="text/javascript" src="lib/phonegap.0.9.6.js"></script>
+        <script type="text/javascript" src="lib/phonegap-1.0.0.js"></script>
         <script type="text/javascript" src="lib/PushNotification.js"></script>
 
         <script type="text/javascript">
@@ -12,7 +12,7 @@
                 alert("Error: " + msg);
             }
             document.addEventListener("deviceready", function() {
-                navigator.pushNotification.registerCallback(function() {}, error);
+                window.plugins.pushNotification.registerCallback(function() {}, error);
             }, false);
         </script>
     </body>

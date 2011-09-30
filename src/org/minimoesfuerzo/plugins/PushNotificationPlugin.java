@@ -33,7 +33,7 @@ public class PushNotificationPlugin extends Plugin {
 		} catch (JSONException e) {
 			Log.e(TAG, e.getMessage());
 		}
-		String js = String.format("navigator.pushNotification.notificationCallback('%s');", data.toString());
+		String js = String.format("window.plugins.pushNotification.notificationCallback('%s');", data.toString());
 		this.sendJavascript(js);
 	}
 
